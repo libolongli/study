@@ -1,0 +1,12 @@
+1,鼠标选中多行，按下 Ctrl+Shift+L (Command+Shift+L) 即可同时编辑这些行； 
+2,鼠标选中文本，反复按 CTRL+D (Command+D) 即可继续向下同时选中下一个相同的文本进行同时编辑；
+3,鼠标选中文本，按下 Alt+F3 (Win) 或 Ctrl+Command+G(Mac) 即可一次性选择全部的相同文本进行同时编辑；
+4,Ctrl+鼠标左键(Win) 或 Command+鼠标左键(Mac) 可以手动选择同时要编辑的多处文本
+5,所说的 Ctrl+P(Win) 或 Shift+Command+P(Mac)，这次试试先输入一个 @ 号看看？嗯，好样的！这列表马上帮你罗列出这文件里全部的 Function 了！同样使用模糊匹配，快速输入几个关键字，马上就能定位到那个Function去了
+6,譬如我有一个名为”hello-iplaysoft.js”的文件，里面其中有一个function叫做”visit_iplaysoft_com”，我现在想要编辑这个函数，那么我只需按下 Ctrl+P，然后输入“heip@vi”回车
+7,Ctrl+Shift+M 选择括号内的内容（按住-继续选择父括号）
+ctrl+shit+k 删除整行
+
+
+
+$("input[name*='']") 

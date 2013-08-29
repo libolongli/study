@@ -1,0 +1,187 @@
+1,能够在带有“:=”赋值操作符的语句中设置变量。
+
+o                     mysql> SELECT @a:=SUM(total),@b=COUNT(*),@a/@b AS avg
+o                         -> FROM test_table;
+o                     mysql> SELECT @t1:=(@t2:=1)+@t3:=4,@t1,@t2,@t3;
+
+2,插入查询
+INSERT INTO tbl_temp2 (fld_id)
+    SELECT tbl_temp1.fld_order_id
+    FROM tbl_temp1 WHERE tbl_temp1.fld_order_id > 100;
+3 在MySQL 5.0.2和更高版本中，可以使用STRICT_TRANS_TABLES或STRICT_ALL_TABLES SQL模式，选择更严格的处理方式。
+STRICT_TRANS_TABLES的工作方式： 
+
+·         对于事务性存储引擎，在语句中任何地方出现的不良数据值均会导致放弃语句并执行回滚。
+
+·         对于非事务性存储引擎，如果错误出现在要插入或更新的第1行，将放弃语句。（在这种情况下，可以认为语句未改变表，就像事务表一样）。首行后出现的错误不会导致放弃语句。取而代之的是，将调整不良数据值，并给出告警，而不是错误。换句话讲，使用STRICT_TRANS_TABLES后，错误值会导致MySQL执行回滚操作，如果可以，所有更新到此为止。
+
+要想执行更严格的检查，请启用STRICT_ALL_TABLES。除了非事务性存储引擎，它与STRICT_TRANS_TABLES等同，即使当不良数据出现在首行后的其他行，所产生的错误也会导致放弃语句。这意味着，如果错误出现在非事务性表多行插入或更新过程的中途，仅更新部分结果。前面的行将完成插入或更新，但错误出现点后面的行则不然。对于非事务性表，为了避免这种情况的发生，可使用单行语句，或者在能接受转换警告而不是错误的情况下使用STRICT_TRANS_TABLES。要想在第1场合防止问题的出现，不要使用MySQL来检查列的内容。最安全的方式（通常也较快）是，让应用程序负责，仅将有效值传递给数据库。
+
+有了严格的模式选项后，可使用INSERT IGNORE或UPDATE IGNORE而不是不带IGNORE的INSERT或UPDATE，将错误当作告警对待。
+
+4 远程访问   mysql -h 192.168.0.108 -u root -p
+
+
+
+SQL 语句
+SELECT VERSION(), CURRENT_DATE,CURRENT_TIME,NOW()
+这是另外一个查询，它说明你能将mysql用作一个简单的计算器：
+
+mysql> SELECT SIN(PI()/4), (4+1)*5;
+
+赋予权限:GRANT ALL ON menagerie.* TO 'your_mysql_name'@'your_client_host';
+注意，刚才显示的命令行中的menagerie不是你的 密码。如果你想要在命令行上在-p选项后提供 密码，则不能插入空格(例如，如-pmypassword，不是-p mypassword)。但是，不建议在命令行输入密码，因为这样会暴露 密码，能被在机器上登录的其它用户窥探到。
+
+你可以创建一个文本文件“pet.txt”，每行包含一个记录，用定位符(tab)把值分开，并且以CREATE TABLE语句中列出的列次序给出。对于丢失的值(例如未知的性别，或仍然活着的动物的死亡日期)，你可以使用NULL值。为了在你的文本文件中表示这些内容，使用\N（反斜线，字母N）。例如，Whistler鸟的记录应为(这里值之间的空白是一个定位符)：
+
+name owner species sex birth death
+ 
+Whistler Gwen bird \N 1997-12-09 \N
+ 
+
+要想将文本文件“pet.txt”装载到pet表中，使用这个命令：
+
+mysql> LOAD DATA LOCAL INFILE '/path/pet.txt' INTO TABLE pet;
+请注意如果用Windows中的编辑器（使用\r\n做为行的结束符）创建文件，应使用：
+
+mysql> LOAD DATA LOCAL INFILE '/path/pet.txt' INTO TABLE pet
+    -> LINES TERMINATED BY '\r\n';
+
+
+AND和OR可以混用，但AND比OR具有更高的优先级。如果你使用两个操作符，使用圆括号指明如何对条件进行分组是一个好主意：
+
+mysql> SELECT * FROM pet WHERE (species = 'cat' AND sex = 'm')
+    -> OR (species = 'dog' AND sex = 'f');
+
+
+此处，YEAR()提取日期的年部分，RIGHT()提取日期的MM-DD (日历年)部分的最右面5个字符。比较MM-DD值的表达式部分的值一般为1或0，如果CURDATE()的年比birth的年早，则年份应减去1。整个表达式有些难懂，使用alias (age)来使输出的列标记更有意义。
+
+尽管查询可行，如果以某个顺序排列行，则能更容易地浏览结果。添加ORDER BY name子句按照名字对输出进行排序则能够实现。
+
+mysql> SELECT name, birth, CURDATE(),
+    -> (YEAR(CURDATE())-YEAR(birth))
+    -> - (RIGHT(CURDATE(),5)<RIGHT(birth,5))
+    -> AS age
+    -> FROM pet ORDER BY name;
+
+你甚至可以编写查询，不管当前月份是什么它都能工作。采用这种方法不必在查询中使用一个特定的月份，DATE_ADD( )允许在一个给定的日期上加上时间间隔。如果在NOW( )值上加上一个月，然后用MONTH()提取月份，结果产生生日所在月份：
+
+mysql> SELECT name, birth FROM pet
+    -> WHERE MONTH(birth) = MONTH(DATE_ADD(CURDATE(),INTERVAL 1 MONTH));
+
+完成该任务的另一个方法是加1以得出当前月份的下一个月(在使用取模函数(MOD)后，如果月份当前值是12，则“回滚”到值0)：
+
+mysql> SELECT name, birth FROM pet
+    -> WHERE MONTH(birth) = MOD(MONTH(CURDATE()), 12) + 1;
+注意，MONTH返回在1和12之间的一个数字，且MOD(something,12)返回在0和11之间的一个数字，因此必须在MOD( )以后加1，否则我们将从11月( 11 )跳到1月(1)。
+
+
+要想找出正好包含5个字符的名字，使用“_”模式字符：
+
+mysql> SELECT * FROM pet WHERE name LIKE '_____';
+
+
+由MySQL提供的模式匹配的其它类型是使用扩展正则表达式。当你对这类模式进行匹配测试时，使用REGEXP和NOT REGEXP操作符(或RLIKE和NOT RLIKE，它们是同义词)。 
+
+扩展正则表达式的一些字符是： 
+
+·         ‘.’匹配任何单个的字符。
+
+·         字符类“[...]”匹配在方括号内的任何字符。例如，“[abc]”匹配“a”、“b”或“c”。为了命名字符的范围，使用一个“-”。“[a-z]”匹配任何字母，而“[0-9]”匹配任何数字。
+
+·         “ * ”匹配零个或多个在它前面的字符。例如，“x*”匹配任何数量的“x”字符，“[0-9]*”匹配任何数量的数字，而“.*”匹配任何数量的任何字符。
+
+如果REGEXP模式与被测试值的任何地方匹配，模式就匹配(这不同于LIKE模式匹配，只有与整个值匹配，模式才匹配)。 
+为了定位一个模式以便它必须匹配被测试值的开始或结尾，在模式开始处使用“^”或在模式的结尾用“$”。 
+为了说明扩展正则表达式如何工作，下面使用REGEXP重写上面所示的LIKE查询：
+
+为了找出以“b”开头的名字，使用“^”匹配名字的开始：
+
+mysql> SELECT * FROM pet WHERE name REGEXP '^b';
++--------+--------+---------+------+------------+------------+
+| name   | owner  | species | sex  | birth      | death      |
++--------+--------+---------+------+------------+------------+
+| Buffy  | Harold | dog     | f    | 1989-05-13 | NULL       |
+| Bowser | Diane  | dog     | m    | 1989-08-31 | 1995-07-29 |
++--------+--------+---------+------+------------+------------+
+如果你想强制使REGEXP比较区分大小写，使用BINARY关键字使其中一个字符串变为二进制字符串。该查询只匹配名称首字母的小写‘b’。
+
+mysql> SELECT * FROM pet WHERE name REGEXP BINARY '^b';
+为了找出以“fy”结尾的名字，使用“$”匹配名字的结尾：
+
+mysql> SELECT * FROM pet WHERE name REGEXP 'fy$';
++--------+--------+---------+------+------------+-------+
+| name   | owner  | species | sex  | birth      | death |
++--------+--------+---------+------+------------+-------+
+| Fluffy | Harold | cat     | f    | 1993-02-04 | NULL  |
+| Buffy  | Harold | dog     | f    | 1989-05-13 | NULL  |
++--------+--------+---------+------+------------+-------+
+为了找出包含一个“w”的名字，使用以下查询：
+
+mysql> SELECT * FROM pet WHERE name REGEXP 'w';
++----------+-------+---------+------+------------+------------+
+| name     | owner | species | sex  | birth      | death      |
++----------+-------+---------+------+------------+------------+
+| Claws    | Gwen  | cat     | m    | 1994-03-17 | NULL       |
+| Bowser   | Diane | dog     | m    | 1989-08-31 | 1995-07-29 |
+| Whistler | Gwen  | bird    | NULL | 1997-12-09 | NULL       |
++----------+-------+---------+------+------------+------------+
+既然如果一个正则表达式出现在值的任何地方，其模式匹配了，就不必在先前的查询中在模式的两侧放置一个通配符以使得它匹配整个值，就像你使用了一个SQL模式那样。
+
+为了找出包含正好5个字符的名字，使用“^”和“$”匹配名字的开始和结尾，和5个“.”实例在两者之间：
+
+mysql> SELECT * FROM pet WHERE name REGEXP '^.....$';
++-------+--------+---------+------+------------+-------+
+| name  | owner  | species | sex  | birth      | death |
++-------+--------+---------+------+------------+-------+
+| Claws | Gwen   | cat     | m    | 1994-03-17 | NULL  |
+| Buffy | Harold | dog     | f    | 1989-05-13 | NULL  |
++-------+--------+---------+------+------------+-------+
+你也可以使用“{n}”“重复n次”操作符重写前面的查询：
+
+mysql> SELECT * FROM pet WHERE name REGEXP '^.{5}$';
++-------+--------+---------+------+------------+-------+
+| name  | owner  | species | sex  | birth      | death |
++-------+--------+---------+------+------------+-------+
+| Claws | Gwen   | cat     | m    | 1994-03-17 | NULL  |
+| Buffy | Harold | dog     | f    | 1989-05-13 | NULL  |
++-------+--------+---------+------+------------+-------+
+
+mysql> SELECT owner, COUNT(*) FROM pet GROUP BY owner;
++--------+----------+
+| owner  | COUNT(*) |
++--------+----------+
+| Benny  |        2 |
+| Diane  |        2 |
+| Gwen   |        3 |
+| Harold |        2 |
++--------+----------+
+
+采用如下方式装载记录：
+
+mysql> LOAD DATA LOCAL INFILE 'event.txt' INTO TABLE event;
+
+
+你不必有2个不同的表来进行联结。如果你想要将一个表的记录与同一个表的其它记录进行比较，可以将一个表联结到自身。例如，为了在你的宠物之中繁殖配偶，你可以用pet联结自身来进行相似种类的雄雌配对：
+
+ 
+
+mysql> SELECT p1.name, p1.sex, p2.name, p2.sex, p1.species
+    -> FROM pet AS p1, pet AS p2
+    -> WHERE p1.species = p2.species AND p1.sex = 'f' AND p2.sex = 'm';
++--------+------+--------+------+---------+
+| name   | sex  | name   | sex  | species |
++--------+------+--------+------+---------+
+| Fluffy | f    | Claws  | m    | cat     |
+| Buffy  | f    | Fang   | m    | dog     |
+| Buffy  | f    | Bowser | m    | dog     |
++--------+------+--------+------+---------+
+在这个查询中，我们为表名指定别名以便能引用列并且使得每一个列引用与哪个表实例相关联更直观。
+
+
+
+
+
+
+
+
